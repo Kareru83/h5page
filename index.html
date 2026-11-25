@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H5Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-accent: #3b82f6; 
+            --color-accent-hover: #2563eb;
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --modal-bg: #0f172a;
+            --border-color: #334155;
+            --input-bg: #1e293b;
+        }
+
+        body.light-mode {
+            --bg-color: #f1f5f9;
+            --text-color: #0f172a;
+            --panel-bg: rgba(255, 255, 255, 0.8);
+            --modal-bg: #ffffff;
+            --border-color: #cbd5e1;
+            --input-bg: #f8fafc;
+            background-image: none !important;
+            background-color: var(--bg-color) !important;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .slide-in { animation: slideInRight 0.4s ease-out forwards; }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            background-image: radial-gradient(circle at 50% 0%, #1e293b, #0f172a);
+            background-attachment: fixed;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .bg-dynamic { background-color: var(--bg-color); }
+        .bg-panel { background-color: var(--panel-bg); }
+        .bg-modal { background-color: var(--modal-bg); }
+        .border-dynamic { border-color: var(--border-color); }
+        .text-dynamic { color: var(--text-color); }
+        .bg-accent { background-color: var(--color-accent) !important; }
+        .hover-bg-accent:hover { background-color: var(--color-accent-hover) !important; }
+        .text-accent { color: var(--color-accent) !important; }
+        .hover-text-accent:hover { color: var(--color-accent-hover) !important; }
+        .focus-ring-accent:focus { outline: none; box-shadow: 0 0 0 2px var(--color-accent); }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+    </style>
+</head>
+<body class="overflow-x-hidden text-dynamic">
+
+    <div class="fixed top-4 right-4 z-40 flex items-center gap-3">
+        <!-- Ikona prihlaseneho uzivatele -->
+        <div id="logged-in-user-icon" class="hidden w-12 h-12 bg-panel rounded-xl flex items-center justify-center border border-dynamic backdrop-blur-md shadow-lg overflow-hidden" title="Přihlášený uživatel">
+            <img id="user-avatar-img" src="" alt="User" class="w-full h-full object-cover">
+        </div>
+
+        <!-- H5 Hlavní Tlačítko (Menu) -->
+        <div class="relative">
+            <button onclick="toggleH5Menu(event)" id="h5-logo-link" class="group focus:outline-none" title="H5 Menu">
+                <div class="w-12 h-12 bg-panel rounded-xl flex items-center justify-center border border-dynamic backdrop-blur-md shadow-lg transition-all group-hover:scale-105">
+                    <img src="https://placehold.co/128x128/transparent/ffffff?text=H5" alt="H5 Logo" class="w-10 h-10 object-contain drop-shadow-md">
+                </div>
+            </button>
+            
+            <!-- H5 Rozbalovací Menu -->
+            <div id="h5-menu" class="hidden absolute right-0 mt-3 w-64 bg-modal border border-dynamic rounded-xl shadow-2xl z-50 overflow-hidden transform transition-all origin-top-right">
+                <!-- Auth Section -->
+                <div class="px-4 py-2 border-b border-dynamic text-xs opacity-70 font-semibold" data-i18n="cloudSyncTitle">Cloud Synchronizace</div>
+                <button onclick="handleAuthAction(); closeH5Menu()" class="w-full text-left px-4 py-3 hover:bg-black/10 font-medium flex items-center gap-2 text-sm border-b border-dynamic">
+                    <span>👤</span> <span id="auth-action-text" data-i18n="login">Přihlásit se</span>
+                </button>
+
+                <!-- Hlavní akce -->
+                <button onclick="openModal('modal-add-collection'); closeH5Menu()" class="w-full text-left px-4 py-3 hover:bg-black/10 border-b border-dynamic font-medium flex items-center gap-2">
+                    <span>📁</span> <span data-i18n="newCollection">Nová kolekce</span>
+                </button>
+                <button onclick="openTagCloudModal(); closeH5Menu()" class="w-full text-left px-4 py-3 hover:bg-black/10 border-b border-dynamic font-medium flex items-center gap-2">
+                    <span>🏷️</span> <span data-i18n="tagCloudTitle">Přehled štítků</span>
+                </button>
+                <button onclick="openSettingsModal(); closeH5Menu()" class="w-full text-left px-4 py-3 hover:bg-black/10 border-b border-dynamic font-medium flex items-center gap-2">
+                    <span>⚙️</span> <span data-i18n="settings">Nastavení</span>
+                </button>
+                <button onclick="openModal('modal-info'); closeH5Menu()" class="w-full text-left px-4 py-3 hover:bg-black/10 border-b border-dynamic font-medium flex items-center gap-2">
+                    <span>ℹ️</span> <span data-i18n="infoBtn">Info H5Page</span>
+                </button>
+                
+                <!-- Export / Import -->
+                <div class="px-4 py-1.5 text-xs font-semibold tracking-wider opacity-50 uppercase bg-black/5" data-i18n="exportData">Export dat</div>
+                <button onclick="exportData(); closeH5Menu()" class="w-full text-left px-4 py-2 hover:bg-black/10 text-sm">JSON <span data-i18n="backup">Záloha</span> ⬇️</button>
+                <button onclick="exportCSV(); closeH5Menu()" class="w-full text-left px-4 py-2 hover:bg-black/10 text-sm border-b border-dynamic">CSV <span data-i18n="forExcel">pro Excel</span> ⬇️</button>
+                
+                <div class="px-4 py-1.5 text-xs font-semibold tracking-wider opacity-50 uppercase bg-black/5" data-i18n="importData">Import dat</div>
+                <button onclick="document.getElementById('import-json').click(); closeH5Menu()" class="w-full text-left px-4 py-2 hover:bg-black/10 text-sm">JSON <span data-i18n="backup">Záloha</span> ⬆️</button>
+                <button onclick="document.getElementById('import-csv').click(); closeH5Menu()" class="w-full text-left px-4 py-2 hover:bg-black/10 text-sm">CSV <span data-i18n="fromExcel">z Excelu</span> ⬆️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vlastní Alert pro notifikace -->
+    <div id="custom-alert" class="fixed bottom-4 right-4 bg-modal border border-dynamic text-dynamic px-6 py-4 rounded-xl shadow-2xl z-[100] transition-opacity duration-300 opacity-0 pointer-events-none font-medium">
+        Zpráva
+    </div>
+
+    <main id="view-dashboard" class="w-full max-w-5xl mx-auto px-4 py-12 flex flex-col items-center min-h-screen fade-in">
+        
+        <!-- Hodiny -->
+        <div class="text-center mb-8 mt-4 md:mt-0">
+            <h1 id="clock" class="text-5xl md:text-7xl font-bold tracking-tight mb-2 drop-shadow-md text-dynamic">00:00</h1>
+        </div>
+
+        <!-- Vyhledávač -->
+        <div class="w-full max-w-2xl mb-12 relative z-20">
+            <form id="search-form" action="https://www.google.com/search" method="GET" target="_blank" class="relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg id="search-icon" class="w-6 h-6 opacity-50 group-focus-within:text-accent transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <input type="text" id="search-input" name="q" placeholder="Hledat..." autocomplete="off" class="block w-full pl-12 pr-4 py-4 text-lg bg-panel border border-dynamic rounded-2xl text-dynamic placeholder-slate-400 focus-ring-accent shadow-xl backdrop-blur-md transition-all" required>
+            </form>
+            <!-- Našeptávač lokálních odkazů (Autocomplete) -->
+            <div id="search-autocomplete" class="absolute w-full mt-2 bg-modal border border-dynamic rounded-xl shadow-2xl hidden flex-col overflow-hidden max-h-80 overflow-y-auto"></div>
+        </div>
+
+        <!-- Rychlé spuštění (VIP Odkazy) -->
+        <div id="quick-launch-container" class="w-full max-w-4xl mb-12 flex flex-wrap justify-center gap-4 hidden z-10"></div>
+
+        <!-- Skryté inputy pro nahrání souboru -->
+        <input type="file" id="import-json" accept=".json" class="hidden" onchange="importData(event)">
+        <input type="file" id="import-csv" accept=".csv" class="hidden" onchange="importCSV(event)">
+
+        <!-- Kolekce (Složky) -->
+        <div class="w-full relative z-10">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-dynamic" data-i18n="myCollections">Moje Kolekce</h2>
+            </div>
+            <div id="collections-grid" class="grid gap-4"></div>
+        </div>
+    </main>
+
+    <!-- POHLED: Detail kolekce -->
+    <section id="view-collection" class="hidden w-full max-w-5xl mx-auto px-4 py-12 min-h-screen flex-col slide-in relative z-10">
+        <div class="flex items-center gap-4 mb-10 flex-wrap">
+            <button onclick="goBackToDashboard()" class="p-3 bg-panel hover:opacity-80 rounded-xl transition-colors backdrop-blur-sm">
+                <svg class="w-6 h-6 text-dynamic" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </button>
+            <div class="flex-grow flex items-center gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold flex items-center gap-3">
+                        <span id="current-collection-icon">📁</span>
+                        <span id="current-collection-name" class="text-dynamic">Název</span>
+                        <svg id="current-collection-lock" class="w-5 h-5 text-dynamic opacity-50 hidden" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                    </h2>
+                </div>
+                <button onclick="exportSingleCollection()" class="p-2 bg-panel hover-bg-accent rounded-lg transition-colors opacity-70 hover:opacity-100 backdrop-blur-sm" title="Exportovat jen tuto kolekci">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                </button>
+                <button onclick="openEditCollectionModal()" class="p-2 bg-panel hover-bg-accent rounded-lg transition-colors opacity-70 hover:opacity-100 backdrop-blur-sm" title="Upravit kolekci">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Akce v kolekci -->
+        <div class="flex flex-wrap gap-4 mb-6">
+            <button onclick="openModal('modal-add-link')" class="flex items-center gap-2 px-5 py-3 bg-accent hover-bg-accent text-white font-medium rounded-xl transition-colors shadow-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                <span data-i18n="addLink">Přidat odkaz</span>
+            </button>
+            <button onclick="openModal('modal-add-note')" class="flex items-center gap-2 px-5 py-3 bg-[#10b981] hover:bg-[#059669] text-white font-medium rounded-xl transition-colors shadow-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                <span data-i18n="addNote">Přidat poznámku</span>
+            </button>
+        </div>
+
+        <div id="links-grid" class="grid gap-4"></div>
+    </section>
+
+    <!-- Modal: Tag Cloud -->
+    <div id="modal-tags" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-300 max-h-[80vh] flex flex-col" id="modal-tags-content">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                <span data-i18n="tagCloudTitle">Přehled štítků</span>
+            </h3>
+            <div id="tag-cloud-container" class="flex flex-wrap justify-center items-center gap-x-6 gap-y-4 overflow-y-auto p-6 bg-black/5 rounded-xl border border-dynamic flex-grow min-h-[150px]">
+                <!-- Dynamicky generováno -->
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeModal('modal-tags')" class="px-5 py-2.5 bg-panel hover:opacity-80 rounded-xl" data-i18n="btnOk">Zavřít</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info (Upraveno na v1.4.1) -->
+    <div id="modal-info" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-info-content">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><span>ℹ️</span> <span data-i18n="infoTitle">O rodině H5</span></h3>
+            <p class="text-sm opacity-80 mb-4 leading-relaxed" data-i18n="infoText">Tento dashboard je součástí ekosystému H5App OS...</p>
+            
+            <div class="text-sm opacity-90 mb-4 bg-black/5 p-4 rounded-xl border border-dynamic">
+                <strong>Novinky ve verzi 1.4.0:</strong>
+                <ul class="list-disc pl-5 mt-2 space-y-1.5 text-xs opacity-80">
+                    <li>Vyhledávání nově ignoruje diakritiku a velikost písmen.</li>
+                    <li>Nové ověření a ochrana hesel při exportu dat do CSV.</li>
+                </ul>
+            </div>
+
+            <p class="text-xs opacity-50 mb-6 font-mono">V. 1.4.0 | H5 Family</p>
+            <div class="flex justify-end gap-3"><button onclick="closeModal('modal-info')" class="px-5 py-2.5 bg-accent hover-bg-accent rounded-xl text-white font-medium" data-i18n="btnOk">Zavřít</button></div>
+        </div>
+    </div>
+
+    <!-- Password -->
+    <div id="modal-password" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/90 backdrop-blur-md opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-sm p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-password-content">
+            <h3 class="text-xl font-bold mb-2 flex items-center gap-2" data-i18n="colLockedTitle">Kolekce uzamčena</h3>
+            <input type="password" id="password-input" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-6 mt-4 focus-ring-accent outline-none text-center tracking-widest text-lg">
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('modal-password'); pendingCollectionId=null;" class="px-5 py-2.5 bg-panel hover:opacity-80 rounded-xl w-full" data-i18n="btnCancel">Zrušit</button>
+                <button onclick="verifyPassword()" class="px-5 py-2.5 bg-accent hover-bg-accent rounded-xl text-white font-medium w-full" data-i18n="btnUnlock">Odemknout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pro export CSV s ochranou hesel -->
+    <div id="modal-export-csv" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/90 backdrop-blur-md opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-export-csv-content">
+            <h3 class="text-xl font-bold mb-2 flex items-center gap-2">Zabezpečení Exportu</h3>
+            <p class="text-sm opacity-80 mb-4">Vaše data obsahují uzamčené kolekce. Pokud si přejete v Excelu zobrazit i tyto chráněné kolekce (a jejich hesla), zadejte heslo níže. <strong>Bez zadání správného hesla budou zaheslované složky z exportu zcela vynechány.</strong></p>
+            <input type="password" id="export-csv-password" placeholder="Heslo uzamčené kolekce" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-6 focus-ring-accent outline-none text-center tracking-widest text-lg">
+            <div class="flex justify-end gap-3 flex-wrap sm:flex-nowrap">
+                <button onclick="closeModal('modal-export-csv')" class="px-4 py-2.5 bg-panel hover:opacity-80 rounded-xl flex-grow text-sm">Zrušit</button>
+                <button onclick="executeCSVExport(false)" class="px-4 py-2.5 bg-panel hover:opacity-80 rounded-xl flex-grow text-sm border border-dynamic whitespace-nowrap">Bez hesel</button>
+                <button onclick="executeCSVExport(true)" class="px-4 py-2.5 bg-accent hover-bg-accent rounded-xl text-white font-medium flex-grow text-sm whitespace-nowrap">Ověřit a Exportovat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Col -->
+    <div id="modal-add-collection" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-add-collection-content">
+            <h3 class="text-xl font-bold mb-4" data-i18n="newCollection">Nová kolekce</h3>
+            <input type="text" id="new-collection-name" placeholder="Název" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-4 focus-ring-accent outline-none">
+            <input type="text" id="new-collection-sortkey" placeholder="Klíč (volitelné)" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-4 focus-ring-accent outline-none">
+            <div class="mb-6">
+                <label class="block text-sm opacity-70 mb-2">Ikona:</label>
+                <input type="text" id="new-collection-icon-input" value="📁" maxlength="4" class="w-16 h-12 text-center text-2xl bg-[var(--input-bg)] border border-dynamic rounded-xl focus-ring-accent outline-none">
+            </div>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('modal-add-collection')" class="px-5 py-2.5 bg-panel hover:opacity-80 rounded-xl" data-i18n="btnCancel">Zrušit</button>
+                <button onclick="createCollection()" class="px-5 py-2.5 bg-accent hover-bg-accent rounded-xl text-white font-medium" data-i18n="btnCreate">Vytvořit</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Col -->
+    <div id="modal-edit-collection" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-edit-collection-content">
+            <h3 class="text-xl font-bold mb-4" data-i18n="editCollection">Upravit kolekci</h3>
+            <input type="text" id="edit-collection-name" placeholder="Název" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-4 focus-ring-accent outline-none">
+            <input type="text" id="edit-collection-sortkey" placeholder="Klíč" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-4 focus-ring-accent outline-none">
+            <input type="text" id="edit-collection-password" placeholder="Heslo pro uzamčení" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-4 focus-ring-accent outline-none">
+            <div class="mb-6"><label class="block text-sm opacity-70 mb-2">Ikona:</label><input type="text" id="edit-collection-icon-input" maxlength="4" class="w-16 h-12 text-center text-2xl bg-[var(--input-bg)] border border-dynamic rounded-xl focus-ring-accent outline-none"></div>
+            <div class="flex justify-between gap-3">
+                <button onclick="deleteCurrentCollection()" class="px-4 py-2.5 bg-red-600/10 text-red-500 rounded-xl border border-red-600/30 text-sm" data-i18n="btnDelete">Smazat</button>
+                <div class="flex gap-2">
+                    <button onclick="closeModal('modal-edit-collection')" class="px-4 py-2.5 bg-panel hover:opacity-80 rounded-xl text-sm" data-i18n="btnCancel">Zrušit</button>
+                    <button onclick="saveEditedCollection()" class="px-4 py-2.5 bg-accent hover-bg-accent rounded-xl text-white font-medium text-sm" data-i18n="btnSave">Uložit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Nastavení -->
+    <div id="modal-settings" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300 overflow-y-auto max-h-[90vh]" id="modal-settings-content">
+            <h3 class="text-xl font-bold mb-4" data-i18n="settingsTitle">Nastavení H5Page</h3>
+            
+            <div class="grid grid-cols-2 gap-4 mb-5">
+                <div>
+                    <label class="block text-sm opacity-70 mb-2">Vzhled kolekcí:</label>
+                    <select id="setting-col-view" class="w-full px-3 py-2 bg-[var(--input-bg)] border border-dynamic rounded-xl focus-ring-accent outline-none appearance-none font-medium text-sm">
+                        <option value="grid">Mřížka (Velké)</option>
+                        <option value="compact">Seznam (Úsporné)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm opacity-70 mb-2">Vzhled odkazů:</label>
+                    <select id="setting-link-view" class="w-full px-3 py-2 bg-[var(--input-bg)] border border-dynamic rounded-xl focus-ring-accent outline-none appearance-none font-medium text-sm">
+                        <option value="grid">Mřížka (Velké)</option>
+                        <option value="list">Seznam (Kompaktní)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-5">
+                <div>
+                    <label class="block text-sm opacity-70 mb-2" data-i18n="setLanguage">Jazyk:</label>
+                    <select id="setting-language" class="w-full px-3 py-2 bg-[var(--input-bg)] border border-dynamic rounded-xl focus-ring-accent outline-none appearance-none font-medium text-sm">
+                        <option value="cs">Čeština</option><option value="en">English</option><option value="de">Deutsch</option><option value="es">Español</option><option value="fr">Français</option><option value="ja">日本語</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm opacity-70 mb-2">Téma:</label>
+                    <select id="setting-theme" class="w-full px-3 py-2 bg-[var(--input-bg)] border border-dynamic rounded-xl focus-ring-accent outline-none appearance-none font-medium text-sm">
+                        <option value="blue">Modrá (Výchozí)</option><option value="emerald">Smaragdová</option><option value="purple">Fialová</option><option value="orange">Oranžová</option><option value="red">Červená</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-5"><label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" id="setting-light-mode" class="w-4 h-4 bg-[var(--input-bg)] border-dynamic rounded"> Světlý režim</label></div>
+            <div class="mb-5">
+                <label class="block text-sm opacity-70 mb-2" data-i18n="setSearchEngine">Vyhledávač:</label>
+                <select id="setting-search-engine" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl focus-ring-accent outline-none appearance-none font-medium">
+                    <option value="google">Google</option><option value="seznam">Seznam</option><option value="bing">Bing</option><option value="yahoo">Yahoo</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm opacity-70 mb-2" data-i18n="setBgImages">Obrázky na pozadí:</label>
+                <div class="flex gap-2 mb-2">
+                    <input type="url" id="setting-bg-url" placeholder="URL obrázku (http...)" class="flex-grow px-3 py-2 bg-[var(--input-bg)] border border-dynamic rounded-xl text-sm focus-ring-accent outline-none">
+                    <button onclick="addBgFromUrl()" class="px-3 py-2 bg-panel hover:opacity-80 rounded-xl text-sm" data-i18n="btnAdd">Přidat</button>
+                </div>
+                <div class="flex gap-2 mb-3">
+                    <input type="file" id="setting-bg-file" accept="image/*" class="hidden" onchange="addBgFromFile(event)">
+                    <button onclick="document.getElementById('setting-bg-file').click()" class="w-full px-3 py-2 bg-panel hover:opacity-80 rounded-xl text-sm text-center border border-dashed" data-i18n="btnUploadFile">+ Nahrát z disku</button>
+                </div>
+                <div id="setting-bg-list" class="flex flex-col gap-2 max-h-32 overflow-y-auto pr-1"></div>
+                <label class="flex items-center gap-2 mt-4 text-sm cursor-pointer"><input type="checkbox" id="setting-bg-overlay" checked class="w-4 h-4 bg-[var(--input-bg)] border-dynamic rounded"> <span data-i18n="setOverlay">Ztmavit obrázek (mlžné sklo)</span></label>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm opacity-70 mb-2" data-i18n="setSort">Řazení kolekcí:</label>
+                <select id="setting-sort" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl focus-ring-accent outline-none appearance-none">
+                    <option value="manual">Výchozí (podle přidání)</option><option value="az">Od A do Z</option><option value="custom">Dle vlastního klíče</option>
+                </select>
+            </div>
+            <div class="mb-6 px-3 py-2 bg-black/5 rounded-xl border border-dynamic text-xs opacity-60 text-center" id="app-stats">Statistiky: 0 kolekcí</div>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('modal-settings')" class="px-5 py-2.5 bg-panel hover:opacity-80 rounded-xl" data-i18n="btnCancel">Zrušit</button>
+                <button onclick="saveSettings()" class="px-5 py-2.5 bg-accent hover-bg-accent rounded-xl text-white font-medium" data-i18n="btnSave">Uložit</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Link -->
+    <div id="modal-add-link" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300 overflow-y-auto max-h-[90vh]" id="modal-add-link-content">
+            <h3 class="text-xl font-bold mb-4" data-i18n="addLinkTitle">Přidat nový odkaz</h3>
+            <p class="text-xs opacity-60 mb-2">Tip: Oddělte více adres mezerou (Multi-link)</p>
+            <input type="text" id="new-link-url" placeholder="https://..." class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none">
+            <input type="text" id="new-link-title" placeholder="Název" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none">
+            <div class="flex gap-2 mb-3">
+                <input type="text" id="new-link-custom-img" placeholder="Vlastní obrázek URL" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl focus-ring-accent outline-none">
+                <input type="text" id="new-link-emoji" placeholder="Emoji" maxlength="2" class="w-16 px-2 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl text-center text-xl focus-ring-accent outline-none">
+            </div>
+            <input type="text" id="new-link-sortkey" placeholder="Klíč pro řazení (volitelné)" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none">
+            <input type="text" id="new-link-tags" placeholder="Štítky (oddělené čárkou)" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none">
+            <input type="text" id="new-link-hidden-note" data-i18n="hiddenNoteTitle" placeholder="Skrytá poznámka (jen pro úpravy)" class="w-full px-4 py-3 bg-black/10 border border-dynamic rounded-xl mb-4 focus-ring-accent outline-none">
+            <label class="flex items-center gap-2 mb-6 text-sm cursor-pointer"><input type="checkbox" id="new-link-quick" class="w-4 h-4 bg-[var(--input-bg)] border-dynamic rounded"> VIP (Rychlé spuštění)</label>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('modal-add-link')" class="px-5 py-2.5 bg-panel hover:opacity-80 rounded-xl" data-i18n="btnCancel">Zrušit</button>
+                <button onclick="addLinkToCurrent()" class="px-5 py-2.5 bg-accent hover-bg-accent rounded-xl text-white font-medium" data-i18n="btnSave">Uložit</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Link -->
+    <div id="modal-edit-link" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300 overflow-y-auto max-h-[90vh]" id="modal-edit-link-content">
+            <h3 class="text-xl font-bold mb-4" data-i18n="editLink">Upravit odkaz</h3>
+            <input type="text" id="edit-link-url" placeholder="https://..." class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none">
+            <input type="text" id="edit-link-title" placeholder="Název" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none">
+            <div class="flex gap-2 mb-3">
+                <input type="text" id="edit-link-custom-img" placeholder="Vlastní obrázek URL" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl focus-ring-accent outline-none">
+                <input type="text" id="edit-link-emoji" placeholder="Emoji" maxlength="2" class="w-16 px-2 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl text-center text-xl focus-ring-accent outline-none">
+            </div>
+            <input type="text" id="edit-link-sortkey" placeholder="Klíč pro řazení" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none">
+            <input type="text" id="edit-link-tags" placeholder="Štítky (oddělené čárkou)" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none">
+            <input type="text" id="edit-link-hidden-note" data-i18n="hiddenNoteTitle" placeholder="Skrytá poznámka" class="w-full px-4 py-3 bg-black/10 border border-dynamic rounded-xl mb-4 focus-ring-accent outline-none text-sm font-mono">
+            <label class="flex items-center gap-2 mb-6 text-sm cursor-pointer"><input type="checkbox" id="edit-link-quick" class="w-4 h-4 bg-[var(--input-bg)] border-dynamic rounded"> VIP</label>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('modal-edit-link')" class="px-5 py-2.5 bg-panel hover:opacity-80 rounded-xl" data-i18n="btnCancel">Zrušit</button>
+                <button onclick="saveEditedLink()" class="px-5 py-2.5 bg-accent hover-bg-accent rounded-xl text-white font-medium" data-i18n="btnSave">Uložit</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Note -->
+    <div id="modal-add-note" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-add-note-content">
+            <h3 class="text-xl font-bold mb-4 text-[#10b981]" data-i18n="addNote">Přidat poznámku</h3>
+            <input type="text" id="new-note-title" placeholder="Nadpis" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none font-medium">
+            <textarea id="new-note-content" placeholder="..." rows="3" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none resize-none"></textarea>
+            <input type="text" id="new-note-sortkey" placeholder="Klíč pro řazení" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none">
+            <input type="text" id="new-note-tags" placeholder="Štítky (oddělené čárkou)" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-4 focus-ring-accent outline-none">
+            <label class="flex items-center gap-2 mb-6 text-sm cursor-pointer"><input type="checkbox" id="new-note-quick" class="w-4 h-4 bg-[var(--input-bg)] border-dynamic rounded"> VIP</label>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('modal-add-note')" class="px-5 py-2.5 bg-panel hover:opacity-80 rounded-xl" data-i18n="btnCancel">Zrušit</button>
+                <button onclick="addNoteToCurrent()" class="px-5 py-2.5 bg-[#10b981] hover:bg-[#059669] rounded-xl text-white font-medium" data-i18n="btnSave">Uložit</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Note -->
+    <div id="modal-edit-note" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-modal border border-dynamic rounded-2xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-edit-note-content">
+            <h3 class="text-xl font-bold mb-4 text-[#10b981]" data-i18n="editNote">Upravit poznámku</h3>
+            <input type="text" id="edit-note-title" placeholder="Nadpis" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none font-medium">
+            <textarea id="edit-note-content" placeholder="..." rows="3" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none resize-none"></textarea>
+            <input type="text" id="edit-note-sortkey" placeholder="Klíč" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-3 focus-ring-accent outline-none">
+            <input type="text" id="edit-note-tags" placeholder="Štítky (oddělené čárkou)" class="w-full px-4 py-3 bg-[var(--input-bg)] border border-dynamic rounded-xl mb-4 focus-ring-accent outline-none">
+            <label class="flex items-center gap-2 mb-6 text-sm cursor-pointer"><input type="checkbox" id="edit-note-quick" class="w-4 h-4 bg-[var(--input-bg)] border-dynamic rounded"> VIP</label>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('modal-edit-note')" class="px-5 py-2.5 bg-panel hover:opacity-80 rounded-xl" data-i18n="btnCancel">Zrušit</button>
+                <button onclick="saveEditedNote()" class="px-5 py-2.5 bg-[#10b981] hover:bg-[#059669] rounded-xl text-white font-medium" data-i18n="btnSave">Uložit</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDWlKHYc2M4kQ_rjDeEW7_reG8XcMCC1tM",
+            authDomain: "h5page-app.firebaseapp.com",
+            projectId: "h5page-app",
+            storageBucket: "h5page-app.firebasestorage.app",
+            messagingSenderId: "880447243523",
+            appId: "1:880447243523:web:78b61950628d4056db1536",
+            measurementId: "G-LBZW04FBC3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        window.currentUser = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            const authActionText = document.getElementById('auth-action-text');
+            const userIconContainer = document.getElementById('logged-in-user-icon');
+            const userAvatarImg = document.getElementById('user-avatar-img');
+
+            if (user) {
+                window.currentUser = user;
+                if(userAvatarImg) {
+                    userAvatarImg.src = user.photoURL;
+                    userAvatarImg.onerror = () => { userAvatarImg.src = 'https://placehold.co/128x128/1e293b/ffffff?text=' + (user.displayName ? user.displayName.charAt(0) : 'U'); };
+                }
+                if(userIconContainer) userIconContainer.classList.remove('hidden');
+                if(authActionText) authActionText.textContent = window.getMsg('logout');
+                
+                try {
+                    const docRef = doc(db, 'users', user.uid);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.collections) window.updateAppFromCloud(data.collections);
+                    } else {
+                        window.saveToCloud();
+                    }
+                } catch (err) {
+                    console.error("Chyba čtení dat z Firebase:", err);
+                    window.showMessage("❌ Chyba komunikace s cloudem.");
+                }
+            } else {
+                window.currentUser = null;
+                if(userIconContainer) userIconContainer.classList.add('hidden');
+                if(authActionText) authActionText.textContent = window.getMsg('login');
+            }
+        });
+
+        window.handleAuthAction = function() {
+            if (window.currentUser) {
+                signOut(auth).then(() => {
+                    window.showMessage(window.getMsg('msgLoggedOut'));
+                });
+            } else {
+                signInWithPopup(auth, provider).catch(err => {
+                    if (err.code !== 'auth/popup-closed-by-user') window.showMessage("Chyba přihlášení: " + err.message);
+                });
+            }
+        };
+
+        window.saveToCloud = function() {
+            if (!window.currentUser) return;
+            const cleanData = JSON.parse(JSON.stringify(window.getCollectionsToSync()));
+            const docRef = doc(db, 'users', window.currentUser.uid);
+            setDoc(docRef, { collections: cleanData, updatedAt: serverTimestamp() }, { merge: true }).catch(err => console.error(err));
+        };
+    </script>
+
+    <script>
+        const i18nDict = {
+            cs: {
+                myCollections: "Moje Kolekce", newCollection: "Nová kolekce", settings: "Nastavení",
+                infoBtn: "Info H5Page", exportData: "Export dat", importData: "Import dat", backup: "Záloha", forExcel: "pro Excel", fromExcel: "z Excelu",
+                addLink: "Přidat odkaz", addNote: "Přidat poznámku", infoTitle: "O rodině H5", btnOk: "Zavřít", btnCancel: "Zrušit", btnUnlock: "Odemknout", colLockedTitle: "Kolekce uzamčena",
+                colLockedText: "Pro přístup zadejte bezpečnostní heslo.", settingsTitle: "Nastavení H5Page", setLanguage: "Jazyk aplikace:",
+                setSearchEngine: "Výchozí vyhledávač:", setBgImages: "Obrázky na pozadí:", btnAdd: "Přidat",
+                btnUploadFile: "+ Nahrát z disku", setOverlay: "Ztmavit obrázek (mlžné sklo)", setSort: "Řazení kolekcí:", btnSave: "Uložit",
+                btnCreate: "Vytvořit", editCollection: "Upravit kolekci", pwdProtection: "Ochrana heslem (volitelné):", btnDelete: "Smazat",
+                addLinkTitle: "Přidat nový odkaz", editLink: "Upravit odkaz", hiddenNoteTitle: "Skrytá poznámka (jen pro úpravy)", editNote: "Upravit poznámku",
+                msgSaved: "Uloženo.", msgCreated: "Vytvořeno.", msgDeleted: "Smazáno.", msgPwdError: "Nesprávné heslo!", msgImportSuccess: "Úspěšně naimportováno.", msgFormatError: "Chyba formátu.", tagCloudTitle: "Přehled štítků",
+                login: "Přihlásit k synchronizaci", logout: "Odhlásit se z cloudu", cloudSyncTitle: "Cloud Synchronizace", msgSyncSuccess: "Data úspěšně stažena z cloudu.", msgLoggedOut: "Odhlášeno z cloudu."
+            },
+            en: {
+                myCollections: "My Collections", newCollection: "New Collection", settings: "Settings",
+                infoBtn: "H5Page Info", exportData: "Export Data", importData: "Import Data", backup: "Backup", forExcel: "for Excel", fromExcel: "from Excel",
+                addLink: "Add Link", addNote: "Add Note", infoTitle: "About H5 Family", btnOk: "Close", btnCancel: "Cancel", btnUnlock: "Unlock", colLockedTitle: "Collection Locked",
+                colLockedText: "Enter password to access.", settingsTitle: "H5Page Settings", setLanguage: "Language:",
+                setSearchEngine: "Search Engine:", setBgImages: "Background Images:", btnAdd: "Add",
+                btnUploadFile: "+ Upload", setOverlay: "Darken image (overlay)", setSort: "Collection Sorting:", btnSave: "Save",
+                btnCreate: "Create", editCollection: "Edit Collection", pwdProtection: "Password protection:", btnDelete: "Delete",
+                addLinkTitle: "Add New Link", editLink: "Edit Link", hiddenNoteTitle: "Hidden Note (edit mode only)", editNote: "Edit Note",
+                msgSaved: "Saved.", msgCreated: "Created.", msgDeleted: "Deleted.", msgPwdError: "Incorrect password!", msgImportSuccess: "Successfully imported.", msgFormatError: "Format error.", tagCloudTitle: "Tag Cloud",
+                login: "Sign In to Sync", logout: "Sign Out", cloudSyncTitle: "Cloud Sync", msgSyncSuccess: "Data downloaded from cloud.", msgLoggedOut: "Logged out from cloud."
+            },
+            de: {
+                myCollections: "Meine Sammlungen", newCollection: "Neue Sammlung", settings: "Einstellungen",
+                infoBtn: "H5Page Info", exportData: "Daten exportieren", importData: "Daten importieren", backup: "Sicherung", forExcel: "für Excel", fromExcel: "aus Excel",
+                addLink: "Link hinzufügen", addNote: "Notiz hinzufügen", infoTitle: "Über die H5-Familie", btnOk: "Schließen", btnCancel: "Abbrechen", btnUnlock: "Entsperren", colLockedTitle: "Sammlung gesperrt",
+                colLockedText: "Passwort eingeben.", settingsTitle: "H5Page Einstellungen", setLanguage: "Sprache:",
+                setSearchEngine: "Suchmaschine:", setBgImages: "Hintergrundbilder:", btnAdd: "Hinzufügen",
+                btnUploadFile: "+ Hochladen", setOverlay: "Bild abdunkeln", setSort: "Sortierung:", btnSave: "Speichern",
+                btnCreate: "Erstellen", editCollection: "Sammlung bearbeiten", pwdProtection: "Passwortschutz:", btnDelete: "Löschen",
+                addLinkTitle: "Neuen Link", editLink: "Link bearbeiten", hiddenNoteTitle: "Versteckte Notiz (nur Bearbeitungsmodus)", editNote: "Notiz bearbeiten",
+                msgSaved: "Gespeichert.", msgCreated: "Erstellt.", msgDeleted: "Gelöscht.", msgPwdError: "Falsches Passwort!", msgImportSuccess: "Erfolgreich importiert.", msgFormatError: "Formatfehler.", tagCloudTitle: "Schlagwortwolke",
+                login: "Anmelden für Sync", logout: "Abmelden", cloudSyncTitle: "Cloud Sync", msgSyncSuccess: "Daten aus der Cloud geladen.", msgLoggedOut: "Von der Cloud abgemeldet."
+            },
+            es: {
+                myCollections: "Mis Colecciones", newCollection: "Nueva Colección", settings: "Configuración",
+                infoBtn: "Info H5Page", exportData: "Exportar", importData: "Importar", backup: "Copia", forExcel: "para Excel", fromExcel: "de Excel",
+                addLink: "Añadir enlace", addNote: "Añadir nota", infoTitle: "Sobre la familia H5", btnOk: "Cerrar", btnCancel: "Cancelar", btnUnlock: "Desbloquear", colLockedTitle: "Colección bloqueada",
+                colLockedText: "Introduce la contraseña.", settingsTitle: "Configuración H5Page", setLanguage: "Idioma:",
+                setSearchEngine: "Buscador:", setBgImages: "Imágenes de fondo:", btnAdd: "Añadir",
+                btnUploadFile: "+ Subir", setOverlay: "Oscurecer imagen", setSort: "Ordenación:", btnSave: "Guardar",
+                btnCreate: "Crear", editCollection: "Editar colección", pwdProtection: "Contraseña:", btnDelete: "Eliminar",
+                addLinkTitle: "Nuevo Enlace", editLink: "Editar enlace", hiddenNoteTitle: "Nota oculta (solo edición)", editNote: "Editar nota",
+                msgSaved: "Guardado.", msgCreated: "Creado.", msgDeleted: "Eliminado.", msgPwdError: "¡Contraseña incorrecta!", msgImportSuccess: "Importación exitosa.", msgFormatError: "Error de formato.", tagCloudTitle: "Nube de etiquetas",
+                login: "Iniciar sesión", logout: "Cerrar sesión", cloudSyncTitle: "Sincronización Cloud", msgSyncSuccess: "Datos descargados de la nube.", msgLoggedOut: "Desconectado de la nube."
+            },
+            fr: {
+                myCollections: "Mes Collections", newCollection: "Nouvelle Collection", settings: "Paramètres",
+                infoBtn: "Info H5Page", exportData: "Exporter", importData: "Importer", backup: "Sauvegarde", forExcel: "pour Excel", fromExcel: "depuis Excel",
+                addLink: "Ajouter un lien", addNote: "Ajouter une note", infoTitle: "À propos de la famille H5", btnOk: "Fermer", btnCancel: "Annuler", btnUnlock: "Déverrouiller", colLockedTitle: "Collection verrouillée",
+                colLockedText: "Entrez le mot de passe.", settingsTitle: "Paramètres H5Page", setLanguage: "Langue:",
+                setSearchEngine: "Moteur de recherche:", setBgImages: "Images de fond:", btnAdd: "Ajouter",
+                btnUploadFile: "+ Télécharger", setOverlay: "Assombrir l'image", setSort: "Tri:", btnSave: "Enregistrer",
+                btnCreate: "Créer", editCollection: "Modifier la collection", pwdProtection: "Mot de passe:", btnDelete: "Supprimer",
+                addLinkTitle: "Nouveau lien", editLink: "Modifier le lien", hiddenNoteTitle: "Note cachée (édition)", editNote: "Modifier la note",
+                msgSaved: "Enregistré.", msgCreated: "Créé.", msgDeleted: "Supprimé.", msgPwdError: "Mot de passe incorrect!", msgImportSuccess: "Importation réussie.", msgFormatError: "Erreur de format.", tagCloudTitle: "Nuage de mots-clés",
+                login: "Se connecter", logout: "Se déconnecter", cloudSyncTitle: "Synchro Cloud", msgSyncSuccess: "Données téléchargées.", msgLoggedOut: "Déconnecté du cloud."
+            },
+            ja: {
+                myCollections: "マイコレクション", newCollection: "新しいコレクション", settings: "設定",
+                infoBtn: "H5Page情報", exportData: "エクスポート", importData: "インポート", backup: "バックアップ", forExcel: "Excel用", fromExcel: "Excelから",
+                addLink: "リンク追加", addNote: "ノート追加", infoTitle: "H5ファミリーについて", btnOk: "閉じる", btnCancel: "キャンセル", btnUnlock: "ロック解除", colLockedTitle: "コレクションがロックされました",
+                colLockedText: "パスワードを入力してください。", settingsTitle: "H5Page 設定", setLanguage: "言語:",
+                setSearchEngine: "検索エンジン:", setBgImages: "背景画像:", btnAdd: "追加",
+                btnUploadFile: "+ アップロード", setOverlay: "画像を暗くする", setSort: "並べ替え:", btnSave: "保存",
+                btnCreate: "作成", editCollection: "コレクション編集", pwdProtection: "パスワード保護:", btnDelete: "削除",
+                addLinkTitle: "新規リンク", editLink: "リンク編集", hiddenNoteTitle: "非公開メモ (編集用)", editNote: "ノート編集",
+                msgSaved: "保存しました。", msgCreated: "作成しました。", msgDeleted: "削除しました。", msgPwdError: "パスワードエラー!", msgImportSuccess: "インポートしました。", msgFormatError: "フォーマットエラー。", tagCloudTitle: "タグクラウド",
+                login: "ログイン", logout: "ログアウト", cloudSyncTitle: "クラウド同期", msgSyncSuccess: "クラウドからデータをダウンロードしました。", msgLoggedOut: "クラウドからログアウトしました。"
+            }
+        };
+
+        const themeColors = { blue: '#3b82f6', emerald: '#10b981', purple: '#8b5cf6', orange: '#f97316', red: '#ef4444' };
+        const defaultData = [{ id: 1, name: "Zprávy a Info", icon: "📰", password: "", links: [{ id: 101, type: "link", url: "https://www.seznam.cz", title: "Seznam.cz", isQuickLaunch: true }]}];
+        const searchEngines = {
+            google: { url: 'https://www.google.com/search', param: 'q', placeholder: 'Google...' },
+            seznam: { url: 'https://search.seznam.cz/', param: 'q', placeholder: 'Seznam...' },
+            bing: { url: 'https://www.bing.com/search', param: 'q', placeholder: 'Bing...' },
+            yahoo: { url: 'https://search.yahoo.com/search', param: 'p', placeholder: 'Yahoo...' }
+        };
+
+        var collections = [];
+        let currentCollectionId = null;
+        let currentEditLinkId = null;
+        let pendingCollectionId = null; 
+        let draggedItemType = null; 
+        let draggedItemObj = null;
+
+        let appSettings = {
+            bgImages: JSON.parse(localStorage.getItem('appBgImages') || '[]'),
+            bgOverlay: localStorage.getItem('appBgOverlay') !== 'false',
+            sortOrder: localStorage.getItem('appSortOrder') || 'manual',
+            collectionsViewMode: localStorage.getItem('collectionsViewMode') || 'grid',
+            linkViewMode: localStorage.getItem('viewMode') || 'grid',
+            searchEngine: localStorage.getItem('appSearchEngine') || 'google',
+            language: localStorage.getItem('appLanguage') || 'cs',
+            theme: localStorage.getItem('appTheme') || 'blue',
+            lightMode: localStorage.getItem('appLightMode') === 'true'
+        };
+        let tempBgImages = [];
+
+        window.getMsg = function(key) { return i18nDict[appSettings.language || 'cs'][key] || i18nDict['cs'][key]; };
+        window.showMessage = function(msg) {
+            const el = document.getElementById('custom-alert');
+            el.textContent = msg; el.classList.remove('opacity-0');
+            setTimeout(() => el.classList.add('opacity-0'), 3000);
+        };
+        window.getCollectionsToSync = function() { return collections; };
+        window.updateAppFromCloud = function(cloudData) {
+            collections = cloudData;
+            localStorage.setItem('myCollectionsData', JSON.stringify(collections));
+            renderCollectionsGrid();
+            renderQuickLaunch();
+            if (currentCollectionId) renderLinksGrid();
+            window.showMessage("✅ " + window.getMsg('msgSyncSuccess'));
+        };
+
+        // --- STREAMING_CHUNK:Configuring Menu and helper logics... ---
+        function toggleH5Menu(e) { e.stopPropagation(); document.getElementById('h5-menu').classList.toggle('hidden'); }
+        function closeH5Menu() { document.getElementById('h5-menu').classList.add('hidden'); }
+
+        // Pomocná funkce pro odstranění diakritiky a převod na malá písmena
+        function removeDiacritics(str) {
+            if (!str) return "";
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        }
+
+        // --- App Logic ---
+        function updateLocalization() {
+            const lang = i18nDict[appSettings.language] || i18nDict['cs'];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (lang[key]) {
+                    if (el.tagName === 'INPUT' && el.type === 'text') el.placeholder = lang[key];
+                    else el.textContent = lang[key];
+                }
+            });
+            const se = searchEngines[appSettings.searchEngine] || searchEngines.google;
+            document.getElementById('search-input').placeholder = "🔎 " + se.placeholder;
+        }
+
+        function applySettings() {
+            document.documentElement.style.setProperty('--color-accent', themeColors[appSettings.theme] || themeColors.blue);
+            document.documentElement.style.setProperty('--color-accent-hover', themeColors[appSettings.theme] || themeColors.blue);
+            if (appSettings.lightMode) document.body.classList.add('light-mode');
+            else document.body.classList.remove('light-mode');
+
+            if (!appSettings.lightMode && appSettings.bgImages && appSettings.bgImages.length > 0) {
+                const randomImg = appSettings.bgImages[Math.floor(Math.random() * appSettings.bgImages.length)];
+                if (appSettings.bgOverlay) document.body.style.backgroundImage = `linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.9)), url('${randomImg}')`;
+                else document.body.style.backgroundImage = `url('${randomImg}')`;
+                document.body.style.backgroundSize = 'cover'; document.body.style.backgroundPosition = 'center';
+            } else if (!appSettings.lightMode) {
+                document.body.style.backgroundImage = 'radial-gradient(circle at 50% 0%, #1e293b, #0f172a)';
+            }
+
+            const form = document.getElementById('search-form'); const input = document.getElementById('search-input');
+            const engine = searchEngines[appSettings.searchEngine] || searchEngines.google;
+            if(form && input) { form.action = engine.url; input.name = engine.param; }
+            updateLocalization();
+        }
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('clock').textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        }
+        setInterval(updateTime, 1000);
+
+        function loadData() {
+            updateTime(); applySettings();
+            try { collections = JSON.parse(localStorage.getItem('myCollectionsData')) || defaultData; } 
+            catch { collections = defaultData; }
+            renderCollectionsGrid(); renderQuickLaunch();
+        }
+        function saveData() { 
+            localStorage.setItem('myCollectionsData', JSON.stringify(collections)); 
+            if(typeof window.saveToCloud === 'function') window.saveToCloud();
+        }
+
+        document.getElementById('search-input').addEventListener('input', function(e) {
+            const originalQuery = e.target.value.trim();
+            const normalizedQuery = removeDiacritics(originalQuery);
+            const box = document.getElementById('search-autocomplete');
+            if (normalizedQuery.length < 2) { box.classList.add('hidden'); return; }
+            
+            let results = [];
+            collections.forEach(c => {
+                if(removeDiacritics(c.name).includes(normalizedQuery)) results.push({ type: 'col', text: `📁 ${c.name}`, obj: c });
+                (c.links||[]).forEach(l => {
+                    let match = false;
+                    if(l.title && removeDiacritics(l.title).includes(normalizedQuery)) match = true;
+                    if(l.url && removeDiacritics(l.url).includes(normalizedQuery)) match = true;
+                    if(l.content && removeDiacritics(l.content).includes(normalizedQuery)) match = true;
+                    if(l.tags && l.tags.some(t => removeDiacritics(t).includes(normalizedQuery))) match = true;
+                    if(match) results.push({ type: l.type, text: `${l.type==='note'?'📝':'🔗'} ${l.title}`, obj: l, colId: c.id });
+                });
+            });
+
+            if (results.length === 0) { box.classList.add('hidden'); return; }
+            box.innerHTML = '';
+            results.slice(0, 8).forEach(r => {
+                const d = document.createElement('div');
+                d.className = "px-4 py-3 hover:bg-accent hover:text-white cursor-pointer border-b border-dynamic text-sm truncate transition-colors";
+                d.textContent = r.text;
+                d.onclick = () => {
+                    box.classList.add('hidden');
+                    document.getElementById('search-input').value = '';
+                    if (r.type === 'col') attemptOpenCollection(r.obj.id);
+                    else if (r.type === 'link') {
+                        if (r.obj.url.includes(' ')) openMultipleUrls(r.obj.url);
+                        else window.open(r.obj.url, '_blank');
+                    }
+                    else if (r.type === 'note') window.showMessage(r.obj.content);
+                };
+                box.appendChild(d);
+            });
+            box.classList.remove('hidden');
+        });
+        
+        document.addEventListener('click', e => { 
+            if(!e.target.closest('#search-form')) document.getElementById('search-autocomplete').classList.add('hidden'); 
+            const h5menu = document.getElementById('h5-menu'); if (h5menu && !h5menu.classList.contains('hidden') && !e.target.closest('.relative')) h5menu.classList.add('hidden');
+        });
+
+        function renderQuickLaunch() {
+            const container = document.getElementById('quick-launch-container'); if(!container) return;
+            container.innerHTML = '';
+            let quickLinks = []; collections.forEach(c => (c.links || []).forEach(l => { if (l.isQuickLaunch) quickLinks.push(l); }));
+            if (quickLinks.length === 0) { container.classList.add('hidden'); return; } else container.classList.remove('hidden');
+
+            quickLinks.forEach(item => {
+                const div = document.createElement('div');
+                if(item.type === 'note') {
+                    div.className = "flex flex-col p-3 bg-[#10b981]/20 hover:bg-[#10b981]/40 border border-[#10b981]/50 rounded-2xl transition-all shadow-lg hover:-translate-y-1 w-32 h-24 overflow-hidden text-left cursor-pointer group";
+                    div.onclick = () => window.showMessage(item.content);
+                    div.innerHTML = `<h4 class="font-bold text-sm truncate w-full mb-1">📝 ${item.title}</h4><p class="text-[10px] opacity-70 leading-tight line-clamp-3">${item.content}</p>`;
+                } else {
+                    div.className = "flex flex-col items-center gap-2 p-3 bg-panel hover:opacity-80 border border-dynamic rounded-2xl transition-all shadow-lg hover:-translate-y-1 w-24 backdrop-blur-sm cursor-pointer group relative";
+                    const isMulti = item.url && item.url.includes(' ');
+                    div.onclick = () => { if(isMulti) openMultipleUrls(item.url); else window.open(item.url, '_blank'); };
+                    let visualIcon = item.emojiIcon ? `<div class="w-full h-full flex items-center justify-center text-3xl">${item.emojiIcon}</div>` : `<img src="${item.customImageUrl || getFaviconUrl(item.url)}" class="w-full h-full object-cover rounded-full" onerror="this.src='https://placehold.co/128x128/1e293b/ffffff?text=${item.title.charAt(0).toUpperCase()}'">`;
+                    div.innerHTML = `
+                        ${isMulti ? '<span class="absolute -top-1 -right-1 bg-purple-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-30">MULTI</span>' : ''}
+                        <div class="w-12 h-12 bg-white/10 rounded-full overflow-hidden flex items-center justify-center p-1 shadow-sm group-hover:scale-105 transition-transform">${visualIcon}</div>
+                        <span class="text-xs font-medium truncate w-full text-center">${item.title}</span>`;
+                }
+                container.appendChild(div);
+            });
+        }
+
+        function openTagCloudModal() {
+            const container = document.getElementById('tag-cloud-container'); if(!container) return;
+            let tagCounts = {};
+            collections.forEach(c => (c.links||[]).forEach(l => (l.tags||[]).forEach(t => { if(t) tagCounts[t] = (tagCounts[t] || 0) + 1; })));
+            const tags = Object.keys(tagCounts).sort((a, b) => a.localeCompare(b, 'cs'));
+            
+            if (tags.length === 0) {
+                container.innerHTML = `<p class="opacity-50 w-full text-center py-8">Zatím nemáte uloženy žádné štítky.</p>`;
+            } else {
+                let maxCount = Math.max(...Object.values(tagCounts));
+                let minCount = Math.min(...Object.values(tagCounts));
+                container.innerHTML = '';
+                tags.forEach(t => {
+                    const count = tagCounts[t];
+                    let fontSize = 0.85; if (maxCount > minCount) fontSize = 0.85 + ((count - minCount) / (maxCount - minCount)) * 1.35;
+                    const btn = document.createElement('button');
+                    btn.className = "hover:text-accent transition-all hover:scale-110 drop-shadow-sm flex items-start gap-0.5 text-dynamic";
+                    btn.style.fontSize = `${fontSize}rem`; btn.style.lineHeight = "1";
+                    if(fontSize > 1.6) btn.style.fontWeight = '700'; else if(fontSize > 1.2) btn.style.fontWeight = '600'; else btn.style.fontWeight = '400';
+                    btn.innerHTML = `<span>#${t}</span><span class="text-[0.5em] opacity-60 font-normal mt-0.5" title="Výskyty: ${count}">${count}</span>`;
+                    
+                    btn.onclick = () => { closeModal('modal-tags'); setTimeout(() => openTagView(t), 300); };
+                    container.appendChild(btn);
+                });
+            }
+            openModal('modal-tags');
+        }
+
+        function openTagView(tag) {
+            const searchInput = document.getElementById('search-input');
+            searchInput.value = tag;
+            searchInput.dispatchEvent(new Event('input'));
+            searchInput.focus(); 
+        }
+
+        function getSortedItems(list) {
+            let sorted = [...list];
+            if (appSettings.sortOrder === 'az') sorted.sort((a, b) => (a.title||a.name).localeCompare((b.title||b.name), 'cs', { numeric: true }));
+            else if (appSettings.sortOrder === 'custom') {
+                sorted.sort((a, b) => {
+                    const keyA = (a.sortKey !== undefined && a.sortKey !== null && a.sortKey !== '') ? a.sortKey.toString() : 'zzzz';
+                    const keyB = (b.sortKey !== undefined && b.sortKey !== null && b.sortKey !== '') ? b.sortKey.toString() : 'zzzz';
+                    return keyA.localeCompare(keyB, 'cs', { numeric: true });
+                });
+            }
+            return sorted;
+        }
+
+        function renderCollectionsGrid() {
+            const grid = document.getElementById('collections-grid'); if(!grid) return;
+            grid.innerHTML = '';
+            
+            if (appSettings.collectionsViewMode === 'grid') grid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
+            else grid.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3";
+
+            getSortedItems(collections).forEach(col => {
+                const div = document.createElement('div');
+                div.draggable = true; div.dataset.id = col.id;
+                div.ondragstart = (e) => { draggedItemType = 'col'; draggedItemObj = col; e.dataTransfer.effectAllowed = 'move'; div.classList.add('opacity-50'); };
+                div.ondragend = () => div.classList.remove('opacity-50');
+                div.ondragover = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; div.classList.add('border-accent'); };
+                div.ondragleave = () => div.classList.remove('border-accent');
+                div.ondrop = (e) => {
+                    e.preventDefault(); div.classList.remove('border-accent');
+                    if (draggedItemType === 'col' && draggedItemObj.id !== col.id) {
+                        const fromIdx = collections.findIndex(c => c.id === draggedItemObj.id);
+                        const toIdx = collections.findIndex(c => c.id === col.id);
+                        collections.splice(fromIdx, 1); collections.splice(toIdx, 0, draggedItemObj);
+                        appSettings.sortOrder = 'manual'; localStorage.setItem('appSortOrder', 'manual');
+                        saveData(); renderCollectionsGrid();
+                    }
+                };
+
+                div.onclick = () => attemptOpenCollection(col.id);
+                const lockIcon = col.password ? `<svg class="w-4 h-4 opacity-50 absolute top-3 right-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>` : '';
+                
+                if (appSettings.collectionsViewMode === 'grid') {
+                    div.className = "relative flex flex-col p-5 bg-panel hover:bg-accent border border-dynamic rounded-2xl cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl group backdrop-blur-sm hover:text-white";
+                    div.innerHTML = `${lockIcon}<div class="text-4xl mb-4 group-hover:scale-110 transition-transform origin-left">${col.icon || '📁'}</div><h3 class="font-semibold text-lg truncate pr-4">${col.name}</h3><p class="text-sm opacity-60 mt-1">${(col.links||[]).length} položek</p>`;
+                } else {
+                    div.className = "relative flex items-center gap-4 p-3 bg-panel hover:bg-accent border border-dynamic rounded-xl cursor-pointer transition-all hover:shadow-md group backdrop-blur-sm hover:text-white";
+                    div.innerHTML = `<div class="text-3xl group-hover:scale-110 transition-transform">${col.icon || '📁'}</div><div class="flex-grow min-w-0 pr-6"><h3 class="font-semibold text-base truncate">${col.name}</h3><p class="text-xs opacity-60">${(col.links||[]).length} položek</p></div>${lockIcon}`;
+                }
+                grid.appendChild(div);
+            });
+        }
+
+        function attemptOpenCollection(id) {
+            const col = collections.find(c => c.id === id); if (!col) return;
+            if (col.password) { pendingCollectionId = id; document.getElementById('password-input').value = ''; openModal('modal-password'); setTimeout(() => document.getElementById('password-input').focus(), 100); } 
+            else openCollection(id);
+        }
+
+        function verifyPassword() {
+            const col = collections.find(c => c.id === pendingCollectionId);
+            if (col && col.password === document.getElementById('password-input').value) {
+                closeModal('modal-password'); const idToOpen = pendingCollectionId; pendingCollectionId = null; setTimeout(() => openCollection(idToOpen), 200);
+            } else window.showMessage(window.getMsg('msgPwdError'));
+        }
+        document.getElementById('password-input').addEventListener('keypress', e => { if (e.key === 'Enter') verifyPassword(); });
+
+        function openCollection(id) {
+            currentCollectionId = id; const col = collections.find(c => c.id === id); if (!col) return;
+            document.getElementById('current-collection-name').textContent = col.name;
+            document.getElementById('current-collection-icon').textContent = col.icon || '📁';
+            document.getElementById('current-collection-lock').classList.toggle('hidden', !col.password);
+            document.getElementById('view-dashboard').classList.add('hidden');
+            const viewCol = document.getElementById('view-collection'); viewCol.classList.remove('hidden'); viewCol.classList.add('slide-in');
+            renderLinksGrid();
+        }
+
+        function goBackToDashboard() { currentCollectionId = null; document.getElementById('view-collection').classList.add('hidden'); document.getElementById('view-dashboard').classList.remove('hidden'); document.getElementById('view-dashboard').classList.add('fade-in'); renderCollectionsGrid(); renderQuickLaunch(); }
+
+        function getFaviconUrl(urlStr) {
+            try { const urls = urlStr.split(' '); return `https://s2.googleusercontent.com/s2/favicons?domain=${new URL(urls[0]).hostname}&sz=128`; } catch { return ''; }
+        }
+
+        function renderLinksGrid() {
+            const grid = document.getElementById('links-grid'); if(!grid) return;
+            grid.innerHTML = ''; const col = collections.find(c => c.id === currentCollectionId); if (!col) return;
+
+            if (appSettings.linkViewMode === 'grid') grid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"; else grid.className = "flex flex-col gap-3";
+            if (!col.links || col.links.length === 0) { grid.innerHTML = `<div class="col-span-full text-center py-10 opacity-50">Tato kolekce je zatím prázdná.</div>`; return; }
+
+            getSortedItems(col.links).forEach(item => {
+                const div = document.createElement('div');
+                div.draggable = true; div.dataset.id = item.id;
+                div.ondragstart = (e) => { draggedItemType = 'link'; draggedItemObj = item; e.dataTransfer.effectAllowed = 'move'; div.classList.add('opacity-50'); };
+                div.ondragend = () => div.classList.remove('opacity-50');
+                div.ondragover = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; div.classList.add('border-accent'); };
+                div.ondragleave = () => div.classList.remove('border-accent');
+                div.ondrop = (e) => {
+                    e.preventDefault(); div.classList.remove('border-accent');
+                    if (draggedItemType === 'link' && draggedItemObj.id !== item.id) {
+                        const fromIdx = col.links.findIndex(l => l.id === draggedItemObj.id);
+                        const toIdx = col.links.findIndex(l => l.id === item.id);
+                        col.links.splice(fromIdx, 1); col.links.splice(toIdx, 0, draggedItemObj);
+                        appSettings.sortOrder = 'manual'; localStorage.setItem('appSortOrder', 'manual');
+                        saveData(); renderLinksGrid();
+                    }
+                };
+
+                const isVipIcon = item.isQuickLaunch ? `<span class="absolute -top-2 -left-2 bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-full z-30 shadow-md">VIP</span>` : '';
+                const tagsHtml = (item.tags && item.tags.length>0) ? `<div class="absolute bottom-2 left-2 flex gap-1 z-20">${item.tags.slice(0,2).map(t=>`<span class="bg-black/20 px-1.5 py-0.5 rounded text-[9px] opacity-80">#${t}</span>`).join('')}</div>` : '';
+
+                if (item.type === 'note') {
+                    if (appSettings.linkViewMode === 'grid') {
+                        div.className = "relative p-4 bg-[#10b981]/20 hover:bg-[#10b981]/40 border border-[#10b981]/50 rounded-2xl transition-all hover:shadow-lg group flex flex-col h-32 text-left overflow-hidden cursor-pointer";
+                        div.innerHTML = `${isVipIcon}<h4 class="font-bold text-sm mb-1 truncate w-full pr-8">📝 ${item.title}</h4><p class="text-xs opacity-80 whitespace-pre-wrap line-clamp-3">${item.content}</p>${tagsHtml}
+                            <div class="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-all"><button onclick="openEditNoteModal(${item.id}, event)" class="p-1.5 bg-black/50 hover:bg-[#10b981] rounded-lg text-white">✏️</button><button onclick="deleteLink(${item.id}, event)" class="p-1.5 bg-black/50 hover:bg-red-500 rounded-lg text-white">❌</button></div>`;
+                        div.onclick = () => window.showMessage(item.content);
+                    } else {
+                        div.className = "relative p-3 bg-[#10b981]/20 hover:bg-[#10b981]/40 border border-[#10b981]/50 rounded-xl transition-all hover:shadow-md group flex items-center gap-4 text-left overflow-hidden cursor-pointer";
+                        div.innerHTML = `<div class="w-10 h-10 flex-shrink-0 bg-black/10 rounded-lg flex items-center justify-center text-xl">📝</div><div class="flex-grow min-w-0 pr-16 flex flex-col justify-center"><h4 class="text-sm font-bold truncate">${item.title}</h4><p class="text-xs opacity-80 truncate mt-0.5">${item.content}</p></div>
+                            <div class="absolute right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-all"><button onclick="openEditNoteModal(${item.id}, event)" class="p-2 bg-black/50 hover:bg-[#10b981] rounded-lg text-white">✏️</button><button onclick="deleteLink(${item.id}, event)" class="p-2 bg-black/50 hover:bg-red-500 rounded-lg text-white">❌</button></div>`;
+                        div.onclick = () => window.showMessage(item.content);
+                    }
+                } else {
+                    const isMulti = item.url && item.url.includes(' ');
+                    let visualIcon = item.emojiIcon ? `<div class="w-full h-full flex items-center justify-center text-2xl">${item.emojiIcon}</div>` : `<img src="${item.customImageUrl || getFaviconUrl(item.url)}" class="w-full h-full object-cover rounded-full" onerror="this.src='https://placehold.co/128x128/1e293b/ffffff?text=${item.title.charAt(0).toUpperCase()}'">`;
+                    
+                    if (appSettings.linkViewMode === 'grid') {
+                        div.className = "relative p-4 bg-panel hover:opacity-80 border border-dynamic rounded-2xl transition-all hover:shadow-lg group flex flex-col items-center justify-center text-center h-32 cursor-pointer";
+                        div.innerHTML = `${isVipIcon}${isMulti ? '<span class="absolute -top-2 right-2 bg-purple-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full z-30">MULTI</span>' : ''}
+                            <div class="absolute inset-0 z-10" onclick="event.stopPropagation(); ${isMulti ? `openMultipleUrls('${item.url}')` : `window.open('${item.url}', '_blank')`}"></div>
+                            <div class="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-all"><button onclick="openEditLinkModal(${item.id}, event)" class="p-1.5 bg-black/50 hover:bg-accent rounded-lg text-white">✏️</button><button onclick="deleteLink(${item.id}, event)" class="p-1.5 bg-black/50 hover:bg-red-500 rounded-lg text-white">❌</button></div>
+                            <div class="w-12 h-12 mb-3 bg-white/10 rounded-full overflow-hidden flex items-center justify-center p-1 shadow-sm">${visualIcon}</div><span class="text-sm font-medium truncate w-full px-2">${item.title}</span>${tagsHtml}`;
+                    } else {
+                        div.className = "relative p-3 bg-panel hover:opacity-80 border border-dynamic rounded-xl transition-all hover:shadow-md group flex items-center gap-4 text-left cursor-pointer";
+                        div.innerHTML = `${isMulti ? '<span class="absolute top-1 left-1 bg-purple-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-30">MULTI</span>' : ''}
+                            <div class="absolute inset-0 z-10" onclick="event.stopPropagation(); ${isMulti ? `openMultipleUrls('${item.url}')` : `window.open('${item.url}', '_blank')`}"></div>
+                            <div class="w-10 h-10 flex-shrink-0 bg-white/10 rounded-full overflow-hidden flex items-center justify-center p-0.5 shadow-sm">${visualIcon}</div>
+                            <div class="flex-grow min-w-0 pr-16"><h4 class="text-sm font-medium truncate">${item.title}</h4><p class="text-xs opacity-60 truncate mt-0.5">${isMulti ? 'Více odkazů' : item.url}</p></div>
+                            <div class="absolute right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-all"><button onclick="openEditLinkModal(${item.id}, event)" class="p-2 bg-black/50 hover:bg-accent rounded-lg text-white">✏️</button><button onclick="deleteLink(${item.id}, event)" class="p-2 bg-black/50 hover:bg-red-500 rounded-lg text-white">❌</button></div>`;
+                    }
+                }
+                grid.appendChild(div);
+            });
+        }
+
+        function openMultipleUrls(urlStr) {
+            const urls = urlStr.split(' ').filter(u => u.trim() !== '');
+            let blocked = false;
+            urls.forEach((u, idx) => {
+                let formatted = u.startsWith('http') ? u : 'https://' + u;
+                const win = window.open(formatted, '_blank');
+                if (!win && idx > 0) blocked = true;
+            });
+            if (blocked) window.showMessage("Prohlížeč zablokoval více oken. Povolte Vyskakovací okna (Pop-ups).");
+        }
+
+        function openModal(id) { const m = document.getElementById(id); const c = document.getElementById(id + '-content'); if(!m) return; m.classList.remove('hidden'); void m.offsetWidth; m.classList.remove('opacity-0'); if(c) c.classList.remove('scale-95'); }
+        function closeModal(id) { 
+            const m = document.getElementById(id); const c = document.getElementById(id + '-content'); if(!m) return; m.classList.add('opacity-0'); if(c) c.classList.add('scale-95'); 
+            setTimeout(() => { m.classList.add('hidden'); document.querySelectorAll(`#${id} input[type="text"], #${id} input[type="url"], #${id} textarea`).forEach(el => el.value=''); }, 300); 
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { document.querySelectorAll('[id^="modal-"]:not(.hidden)').forEach(m => closeModal(m.id)); }
+            if (e.altKey) {
+                if (e.key.toLowerCase() === 'c' && currentCollectionId === null) { e.preventDefault(); openModal('modal-add-collection'); }
+                if (e.key.toLowerCase() === 'l' && currentCollectionId !== null) { e.preventDefault(); openModal('modal-add-link'); }
+                if (e.key.toLowerCase() === 'n' && currentCollectionId !== null) { e.preventDefault(); openModal('modal-add-note'); }
+            }
+        });
+
+        function renderSettingsBgList() {
+            const list = document.getElementById('setting-bg-list'); if(!list) return; list.innerHTML = '';
+            tempBgImages.forEach((url, i) => {
+                const d = document.createElement('div'); d.className = "flex items-center gap-2 bg-black/20 p-2 rounded-lg border border-dynamic";
+                d.innerHTML = `<div class="w-8 h-8 rounded overflow-hidden flex-shrink-0"><img src="${url}" class="w-full h-full object-cover"></div><span class="text-xs opacity-70 truncate flex-grow">${url.startsWith('data')?'Obrázek z disku':url}</span><button onclick="removeBgImage(${i})" class="text-red-400 hover:text-red-300 px-2 font-bold">✕</button>`;
+                list.appendChild(d);
+            });
+        }
+        function addBgFromUrl() { const u = document.getElementById('setting-bg-url').value.trim(); if (!u) return; if (tempBgImages.length >= 10) return window.showMessage("Max 10"); tempBgImages.push(u); document.getElementById('setting-bg-url').value = ''; renderSettingsBgList(); }
+        function addBgFromFile(e) {
+            const file = e.target.files[0]; if (!file || tempBgImages.length >= 10) return;
+            const r = new FileReader();
+            r.onload = ev => { const img = new Image(); img.onload = () => { const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d'); let w = img.width, h = img.height, max = 1920; if (w > h) { if (w > max) { h *= max / w; w = max; } } else { if (h > max) { w *= max / h; h = max; } } cvs.width = w; cvs.height = h; ctx.drawImage(img, 0, 0, w, h); tempBgImages.push(cvs.toDataURL('image/jpeg', 0.8)); renderSettingsBgList(); }; img.src = ev.target.result; };
+            r.readAsDataURL(file); e.target.value = '';
+        }
+        function removeBgImage(i) { tempBgImages.splice(i, 1); renderSettingsBgList(); }
+        
+        function openSettingsModal() {
+            tempBgImages = [...(appSettings.bgImages || [])]; renderSettingsBgList();
+            document.getElementById('setting-col-view').value = appSettings.collectionsViewMode;
+            document.getElementById('setting-link-view').value = appSettings.linkViewMode;
+            document.getElementById('setting-language').value = appSettings.language;
+            document.getElementById('setting-theme').value = appSettings.theme;
+            document.getElementById('setting-light-mode').checked = appSettings.lightMode;
+            document.getElementById('setting-sort').value = appSettings.sortOrder;
+            document.getElementById('setting-bg-overlay').checked = appSettings.bgOverlay;
+            document.getElementById('setting-search-engine').value = appSettings.searchEngine;
+            
+            let colCount = collections.length; let linkCount = 0; let noteCount = 0;
+            collections.forEach(c => (c.links||[]).forEach(l => { if(l.type==='note') noteCount++; else linkCount++; }));
+            document.getElementById('app-stats').textContent = `Statistiky: ${colCount} kolekcí, ${linkCount} odkazů, ${noteCount} poznámek`;
+            openModal('modal-settings');
+        }
+        function saveSettings() {
+            appSettings.collectionsViewMode = document.getElementById('setting-col-view').value;
+            appSettings.linkViewMode = document.getElementById('setting-link-view').value;
+            appSettings.language = document.getElementById('setting-language').value;
+            appSettings.theme = document.getElementById('setting-theme').value;
+            appSettings.lightMode = document.getElementById('setting-light-mode').checked;
+            appSettings.bgImages = [...tempBgImages];
+            appSettings.sortOrder = document.getElementById('setting-sort').value;
+            appSettings.bgOverlay = document.getElementById('setting-bg-overlay').checked;
+            appSettings.searchEngine = document.getElementById('setting-search-engine').value;
+            
+            localStorage.setItem('collectionsViewMode', appSettings.collectionsViewMode);
+            localStorage.setItem('viewMode', appSettings.linkViewMode);
+            localStorage.setItem('appLanguage', appSettings.language); localStorage.setItem('appTheme', appSettings.theme); localStorage.setItem('appLightMode', appSettings.lightMode);
+            localStorage.setItem('appBgImages', JSON.stringify(appSettings.bgImages)); localStorage.setItem('appSortOrder', appSettings.sortOrder);
+            localStorage.setItem('appBgOverlay', appSettings.bgOverlay); localStorage.setItem('appSearchEngine', appSettings.searchEngine);
+            
+            applySettings(); renderCollectionsGrid(); renderLinksGrid(); closeModal('modal-settings'); window.showMessage(window.getMsg('msgSaved'));
+        }
+
+        function createCollection() {
+            const name = document.getElementById('new-collection-name').value.trim(); const sortKey = document.getElementById('new-collection-sortkey').value.trim(); const icon = document.getElementById('new-collection-icon-input').value.trim() || '📁';
+            if (!name) return; collections.push({ id: Date.now(), name, icon, sortKey, password: "", links: [] }); saveData(); renderCollectionsGrid(); closeModal('modal-add-collection'); window.showMessage(window.getMsg('msgCreated'));
+        }
+        function deleteCurrentCollection() { collections = collections.filter(c => c.id !== currentCollectionId); saveData(); goBackToDashboard(); closeModal('modal-edit-collection'); window.showMessage(window.getMsg('msgDeleted')); }
+        function openEditCollectionModal() {
+            const col = collections.find(c => c.id === currentCollectionId); if (!col) return;
+            document.getElementById('edit-collection-name').value = col.name; document.getElementById('edit-collection-sortkey').value = col.sortKey || '';
+            document.getElementById('edit-collection-icon-input').value = col.icon || '📁'; document.getElementById('edit-collection-password').value = col.password || ''; openModal('modal-edit-collection');
+        }
+        function saveEditedCollection() {
+            const name = document.getElementById('edit-collection-name').value.trim(); if (!name) return;
+            const col = collections.find(c => c.id === currentCollectionId);
+            if (col) {
+                col.name = name; col.sortKey = document.getElementById('edit-collection-sortkey').value.trim(); col.icon = document.getElementById('edit-collection-icon-input').value.trim() || '📁'; col.password = document.getElementById('edit-collection-password').value.trim();
+                saveData(); document.getElementById('current-collection-name').textContent = col.name; document.getElementById('current-collection-icon').textContent = col.icon; document.getElementById('current-collection-lock').classList.toggle('hidden', !col.password); closeModal('modal-edit-collection'); window.showMessage(window.getMsg('msgSaved'));
+            }
+        }
+
+        function getTagsArray(str) { return str.split(',').map(s=>s.trim()).filter(s=>s.length>0); }
+
+        function addLinkToCurrent() {
+            let url = document.getElementById('new-link-url').value.trim(); let title = document.getElementById('new-link-title').value.trim();
+            if (!url) return; if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+            if (!title) { try { title = new URL(url.split(' ')[0]).hostname.replace('www.', ''); } catch(e) { title = 'Odkaz'; } }
+            const col = collections.find(c => c.id === currentCollectionId);
+            if (col) {
+                col.links = col.links || [];
+                col.links.push({ id: Date.now(), type: 'link', url, title, customImageUrl: document.getElementById('new-link-custom-img').value.trim() || null, emojiIcon: document.getElementById('new-link-emoji').value.trim() || null, sortKey: document.getElementById('new-link-sortkey').value.trim(), tags: getTagsArray(document.getElementById('new-link-tags').value), hiddenNote: document.getElementById('new-link-hidden-note').value.trim() || null, isQuickLaunch: document.getElementById('new-link-quick').checked });
+                saveData(); renderLinksGrid(); closeModal('modal-add-link');
+            }
+        }
+        function openEditLinkModal(id, e) {
+            e.stopPropagation(); currentEditLinkId = id; const col = collections.find(c => c.id === currentCollectionId); const link = col.links.find(l => l.id === id);
+            if (link) {
+                document.getElementById('edit-link-url').value = link.url || ''; document.getElementById('edit-link-title').value = link.title || ''; document.getElementById('edit-link-custom-img').value = link.customImageUrl || ''; document.getElementById('edit-link-emoji').value = link.emojiIcon || ''; document.getElementById('edit-link-sortkey').value = link.sortKey || ''; document.getElementById('edit-link-tags').value = (link.tags||[]).join(', '); document.getElementById('edit-link-hidden-note').value = link.hiddenNote || ''; document.getElementById('edit-link-quick').checked = !!link.isQuickLaunch; openModal('modal-edit-link');
+            }
+        }
+        function saveEditedLink() {
+            let url = document.getElementById('edit-link-url').value.trim(); let title = document.getElementById('edit-link-title').value.trim();
+            if (!url) return; if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+            const col = collections.find(c => c.id === currentCollectionId);
+            if (col) {
+                const link = col.links.find(l => l.id === currentEditLinkId);
+                if (link) {
+                    link.url = url; if (!title) { try { title = new URL(url.split(' ')[0]).hostname.replace('www.', ''); } catch(e) { title = 'Odkaz'; } }
+                    link.title = title; link.customImageUrl = document.getElementById('edit-link-custom-img').value.trim() || null; link.emojiIcon = document.getElementById('edit-link-emoji').value.trim() || null; link.sortKey = document.getElementById('edit-link-sortkey').value.trim(); link.tags = getTagsArray(document.getElementById('edit-link-tags').value); link.hiddenNote = document.getElementById('edit-link-hidden-note').value.trim() || null; link.isQuickLaunch = document.getElementById('edit-link-quick').checked;
+                    saveData(); renderLinksGrid(); closeModal('modal-edit-link');
+                }
+            }
+        }
+
+        function addNoteToCurrent() {
+            let title = document.getElementById('new-note-title').value.trim() || "Poznámka"; let content = document.getElementById('new-note-content').value.trim(); if (!title && !content) return;
+            const col = collections.find(c => c.id === currentCollectionId);
+            if (col) { col.links = col.links || []; col.links.push({ id: Date.now(), type: 'note', title, content, sortKey: document.getElementById('new-note-sortkey').value.trim(), tags: getTagsArray(document.getElementById('new-note-tags').value), isQuickLaunch: document.getElementById('new-note-quick').checked }); saveData(); renderLinksGrid(); closeModal('modal-add-note'); }
+        }
+        function openEditNoteModal(id, e) {
+            e.stopPropagation(); currentEditLinkId = id; const col = collections.find(c => c.id === currentCollectionId); const note = col.links.find(l => l.id === id);
+            if (note) { document.getElementById('edit-note-title').value = note.title || ''; document.getElementById('edit-note-content').value = note.content || ''; document.getElementById('edit-note-sortkey').value = note.sortKey || ''; document.getElementById('edit-note-tags').value = (note.tags||[]).join(', '); document.getElementById('edit-note-quick').checked = !!note.isQuickLaunch; openModal('modal-edit-note'); }
+        }
+        function saveEditedNote() {
+            let title = document.getElementById('edit-note-title').value.trim() || "Poznámka"; let content = document.getElementById('edit-note-content').value.trim(); if (!title && !content) return;
+            const col = collections.find(c => c.id === currentCollectionId);
+            if (col) { const note = col.links.find(l => l.id === currentEditLinkId); if (note) { note.title = title; note.content = content; note.sortKey = document.getElementById('edit-note-sortkey').value.trim(); note.tags = getTagsArray(document.getElementById('edit-note-tags').value); note.isQuickLaunch = document.getElementById('edit-note-quick').checked; saveData(); renderLinksGrid(); closeModal('modal-edit-note'); } }
+        }
+        function deleteLink(id, e) { e.stopPropagation(); const col = collections.find(c => c.id === currentCollectionId); if (col) { col.links = col.links.filter(l => l.id !== id); saveData(); renderLinksGrid(); } }
+
+        function exportData() {
+            const dataStr = JSON.stringify(collections, null, 2); const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = "H5Page_Zaloha.json"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+        function exportSingleCollection() {
+            if(!currentCollectionId) return; const col = collections.find(c => c.id === currentCollectionId); if(!col) return;
+            const dataStr = JSON.stringify([col], null, 2); const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `H5Page_Kolekce_${col.name}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+        function importData(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => { try { const data = JSON.parse(ev.target.result); if (Array.isArray(data)) { data.forEach(newCol => { const ex = collections.find(c=>c.id===newCol.id); if(!ex) collections.push(newCol); else Object.assign(ex, newCol); }); saveData(); if (currentCollectionId === null) { renderCollectionsGrid(); renderQuickLaunch(); } else openCollection(currentCollectionId); window.showMessage(window.getMsg('msgImportSuccess')); } else throw new Error(); } catch { window.showMessage(window.getMsg('msgFormatError')); } };
+            reader.readAsText(file); e.target.value = '';
+        }
+
+        function exportCSV() {
+            const hasLockedCollections = collections.some(c => c.password);
+            if (hasLockedCollections) {
+                document.getElementById('export-csv-password').value = '';
+                openModal('modal-export-csv');
+            } else {
+                executeCSVExport(true); // Vše bez hesla, rovnou exportujeme
+            }
+        }
+
+        // Vlastní logika vygenerování a exportu CSV (s ochranou hesla)
+        function executeCSVExport(checkPassword) {
+            const enteredPassword = document.getElementById('export-csv-password') ? document.getElementById('export-csv-password').value : '';
+            closeModal('modal-export-csv');
+
+            let csv = "Razeni;Kolekce;Ikona;Heslo;Typ;Nazev;URL_nebo_Obsah;Obrazek;VIP;SkrytaPoznamka;LinkSortKey;Tags;EmojiIcon\n";
+            let exportedAnything = false;
+
+            collections.forEach(col => {
+                // Logika přeskočení chráněných kolekcí
+                if (col.password) {
+                    if (!checkPassword || col.password !== enteredPassword) {
+                        return; // PŘESKOČIT celou kolekci, pokud je chráněná a heslo nesouhlasí (nebo se nekontroluje)
+                    }
+                }
+
+                exportedAnything = true;
+                const sK = (col.sortKey||'').replace(/"/g,'""'); 
+                const cN = col.name.replace(/"/g,'""'); 
+                const cP = (col.password||'').replace(/"/g,'""');
+
+                if (!col.links || col.links.length === 0) {
+                    csv += `"${sK}";"${cN}";"${col.icon}";"${cP}";"";"";"";"";"";"";"";"";""\n`;
+                } else {
+                    col.links.forEach(l => {
+                        const t = (l.title||'').replace(/"/g,'""'); const v = l.isQuickLaunch?'1':'0'; const hN = (l.hiddenNote||'').replace(/"/g,'""'); const lsK = (l.sortKey||'').replace(/"/g,'""'); const tags = (l.tags||[]).join(',').replace(/"/g,'""'); const emoji = (l.emojiIcon||'').replace(/"/g,'""');
+                        if(l.type === 'note') csv += `"${sK}";"${cN}";"${col.icon}";"${cP}";"note";"${t}";"${(l.content||'').replace(/"/g,'""')}";"";"${v}";"${hN}";"${lsK}";"${tags}";"${emoji}"\n`;
+                        else csv += `"${sK}";"${cN}";"${col.icon}";"${cP}";"link";"${t}";"${(l.url||'').replace(/"/g,'""')}";"${(l.customImageUrl||'').replace(/"/g,'""')}";"${v}";"${hN}";"${lsK}";"${tags}";"${emoji}"\n`;
+                    });
+                }
+            });
+            
+            if(!exportedAnything) {
+                window.showMessage("Nebylo vyexportováno nic (všechna data jsou zaheslována a heslo nesouhlasí).");
+                return;
+            }
+
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = "H5Page_Export.csv"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+
+        function parseCSVRow(str) { let res=[], cur='', inQ=false; for (let i=0; i<str.length; i++) { if (str[i]==='"') { if (inQ && str[i+1]==='"') { cur+='"'; i++; } else inQ=!inQ; } else if (str[i]===';' && !inQ) { res.push(cur); cur=''; } else cur+=str[i]; } res.push(cur); return res; }
+        
+        function importCSV(e) {
+            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const rows = ev.target.result.split(/\r?\n/); let count=0;
+                    for (let i=1; i<rows.length; i++) {
+                        if (!rows[i].trim()) continue; let c = parseCSVRow(rows[i]); if (c.length < 2) continue;
+                        let sK=c[0], cN=c[1], cI=c[2]||'📁', cP=c[3]||'', type=c[4]||'link', t=c[5], uOc=c[6], img=c[7], isV=c[8]==='1', hN=c[9]||'', lsK=c[10]||'', tags=c[11]?c[11].split(','):[], emoji=c[12]||'';
+                        let col = collections.find(x => x.name === cN); if (!col) { col = { id: Date.now()+Math.random(), name: cN, icon: cI, sortKey: sK, password: cP, links: [] }; collections.push(col); }
+                        if (t || uOc) { col.links.push({ id: Date.now()+Math.random(), type, title: t||uOc, [type==='note'?'content':'url']: uOc, customImageUrl: img||null, isQuickLaunch: isV, hiddenNote: hN||null, sortKey: lsK||null, tags, emojiIcon: emoji||null }); count++; }
+                    }
+                    if (count > 0) { saveData(); if (currentCollectionId === null) { renderCollectionsGrid(); renderQuickLaunch(); } else openCollection(currentCollectionId); window.showMessage(window.getMsg('msgImportSuccess')); } else throw new Error();
+                } catch { window.showMessage(window.getMsg('msgFormatError')); }
+            };
+            reader.readAsText(file); e.target.value = '';
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
